@@ -11,5 +11,7 @@
 @interface UIColor (JTGestureBasedTableViewHelper)
 - (UIColor *)colorWithBrightness:(CGFloat)brightness;
 - (UIColor *)colorWithHueOffset:(CGFloat)hueOffset;
++ (UIColor *)iGreenColor:(CGFloat)alpha;
++ (UIColor *)iBlackColor:(CGFloat)alpha;
 @end
 

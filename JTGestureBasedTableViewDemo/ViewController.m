@@ -17,7 +17,8 @@
 @property (nonatomic, strong) NSMutableArray *rows;
 @property (nonatomic, strong) JTTableViewGestureRecognizer *tableViewRecognizer;
 @property (nonatomic, strong) id grabbedObject;
-
+@property (nonatomic, strong) UIView *maskView;
+@property (nonatomic, strong) UITextField *editText;
 - (void)moveRowToBottomForIndexPath:(NSIndexPath *)indexPath;
 
 @end
@@ -61,8 +62,21 @@
     self.tableView.backgroundColor = [UIColor blackColor];
     self.tableView.separatorStyle  = UITableViewCellSeparatorStyleNone;
     self.tableView.rowHeight       = NORMAL_CELL_FINISHING_HEIGHT;
+   
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWasShown:) name:UIKeyboardWillShowNotification object:nil];
+    
 }
 
+- (void)viewDidUnload{
+    [super viewDidUnload];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillShowNotification object:nil];
+}
+
+- (void)keyboardWasShown:(NSNotification*)aNotification
+{
+    //TODO: keyboard was shown
+    NSLog(@"keyboard was shown");
+}
 #pragma mark Private Method
 
 - (void)moveRowToBottomForIndexPath:(NSIndexPath *)indexPath {
@@ -112,11 +126,7 @@
             
             
             cell.finishedHeight = COMMITING_CREATE_CELL_HEIGHT;
-            if (cell.frame.size.height > COMMITING_CREATE_CELL_HEIGHT * 2) {
-                cell.imageView.image = [UIImage imageNamed:@"reload.png"];
-                cell.tintColor = [UIColor blackColor];
-                cell.textLabel.text = @"Return to list...";
-            } else if (cell.frame.size.height > COMMITING_CREATE_CELL_HEIGHT) {
+            if (cell.frame.size.height > COMMITING_CREATE_CELL_HEIGHT) {
                 cell.imageView.image = nil;
                 // Setup tint color
                 cell.tintColor = backgroundColor;
@@ -195,8 +205,12 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [self editCellAtIndexPath:indexPath];
+    //TODO: didSelect
     NSLog(@"tableView:didSelectRowAtIndexPath: %@", indexPath);
+    
 }
+
 
 #pragma mark -
 #pragma mark JTTableViewGestureAddingRowDelegate
@@ -208,18 +222,80 @@
 - (void)gestureRecognizer:(JTTableViewGestureRecognizer *)gestureRecognizer needsCommitRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.rows replaceObjectAtIndex:indexPath.row withObject:@"Added!"];
     JTTransformableTableViewCell *cell = (id)[gestureRecognizer.tableView cellForRowAtIndexPath:indexPath];
+    
+    cell.finishedHeight = NORMAL_CELL_FINISHING_HEIGHT;
+    cell.imageView.image = nil;
+    cell.textLabel.text = @"";
 
-    BOOL isFirstCell = indexPath.section == 0 && indexPath.row == 0;
-    if (isFirstCell && cell.frame.size.height > COMMITING_CREATE_CELL_HEIGHT * 2) {
-        [self.rows removeObjectAtIndex:indexPath.row];
-        [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationMiddle];
-        // Return to list
+    [self editCellAtIndexPath:indexPath];
+
+}
+
+- (void)maskViewTapped:(id)sender{
+    
+    if (!self.editText) {
+        return;
     }
-    else {
-        cell.finishedHeight = NORMAL_CELL_FINISHING_HEIGHT;
-        cell.imageView.image = nil;
-        cell.textLabel.text = @"Just Added!";
+    
+    if ([self.editText.text length]==0) {
+        NSInteger row = self.editText.tag;
+        [self.rows removeObjectAtIndex:row];
+        //TODO: Section
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
+        [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+    }else{
+        [self.rows replaceObjectAtIndex:self.editText.tag withObject:self.editText.text];
+        [self.tableView reloadData];
     }
+    
+    CGFloat offset = fabs(self.tableView.frame.origin.y);
+    [UIView beginAnimations:@"scrollBack" context:nil];
+    [UIView setAnimationDuration:0.5];
+    self.tableView.frame = CGRectOffset(self.tableView.frame, 0,offset);
+    [UIView commitAnimations];
+    [self.maskView removeFromSuperview];
+    [self.editText removeFromSuperview];
+    self.maskView = nil;
+    self.editText = nil;
+}
+- (void)editCellAtIndexPath:(NSIndexPath *)indexPath{
+    
+    //TODO: pay attention to oriention
+    UIView *maskView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    maskView.backgroundColor = [UIColor iBlackColor:0.5];
+    
+    UITapGestureRecognizer *recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(maskViewTapped:)];
+    UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:nil];
+    UIPinchGestureRecognizer *pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:nil];
+    [maskView addGestureRecognizer:recognizer];
+    [maskView addGestureRecognizer:panRecognizer];
+    [maskView addGestureRecognizer:pinchRecognizer];
+    
+    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+    UITextField * textField = [[UITextField alloc] initWithFrame:cell.textLabel.frame];
+    textField.text = cell.textLabel.text;
+    textField.textColor = cell.textLabel.textColor;
+    textField.font = cell.textLabel.font;
+    textField.tag = indexPath.row;
+    [cell.textLabel removeFromSuperview];
+    cell.textLabel.text = @"";
+    [cell addSubview:textField];
+    [maskView addSubview:cell];
+    [self.tableView addSubview:maskView];
+    self.maskView = maskView;
+    self.editText = textField;
+   
+    CGFloat offsetY = NORMAL_CELL_FINISHING_HEIGHT*indexPath.row;
+    [UIView beginAnimations:@"" context:nil];
+    [UIView setAnimationDuration:0.3];
+    self.tableView.frame = CGRectOffset(self.tableView.frame, 0,-offsetY);
+    [UIView commitAnimations];
+     
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        //如果不放在这里，可能会产生同步方面的问题
+        [textField becomeFirstResponder];
+    });
+
 }
 
 - (void)gestureRecognizer:(JTTableViewGestureRecognizer *)gestureRecognizer needsDiscardRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -245,12 +321,14 @@
             backgroundColor = [[UIColor redColor] colorWithHueOffset:0.12 * indexPath.row / [self tableView:self.tableView numberOfRowsInSection:indexPath.section]];
             break;
         case JTTableViewCellEditingStateRight:
-            backgroundColor = [UIColor greenColor];
+            backgroundColor = [UIColor iGreenColor:1];
             break;
         default:
-            backgroundColor = [UIColor darkGrayColor];
+            backgroundColor = [[UIColor redColor] colorWithHueOffset:0.12 * indexPath.row / [self tableView:self.tableView numberOfRowsInSection:indexPath.section]];
             break;
     }
+    
+    //TODO: add check and cross icon
     cell.contentView.backgroundColor = backgroundColor;
     if ([cell isKindOfClass:[JTTransformableTableViewCell class]]) {
         ((JTTransformableTableViewCell *)cell).tintColor = backgroundColor;

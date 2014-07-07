@@ -176,7 +176,7 @@ CGFloat const JTTableViewRowAnimationDuration          = 0.25;       // Rough gu
         
         CGFloat diffRowHeight = CGRectGetHeight(rect) - CGRectGetHeight(rect)/[recognizer scale];
         
-//        NSLog(@"%f %f %f", CGRectGetHeight(rect), CGRectGetHeight(rect)/[recognizer scale], [recognizer scale]);
+//      NSLog(@"%f %f %f", CGRectGetHeight(rect), CGRectGetHeight(rect)/[recognizer scale], [recognizer scale]);
         if (self.addingRowHeight - diffRowHeight >= 1 || self.addingRowHeight - diffRowHeight <= -1) {
             self.addingRowHeight = diffRowHeight;
             [self.tableView reloadData];
@@ -201,7 +201,7 @@ CGFloat const JTTableViewRowAnimationDuration          = 0.25;       // Rough gu
         CGPoint location1 = [recognizer locationOfTouch:0 inView:self.tableView];
         
         NSIndexPath *indexPath = self.addingIndexPath;
-        if ( ! indexPath) {
+        if (!indexPath) {
             indexPath = [self.tableView indexPathForRowAtPoint:location1];
             self.addingIndexPath = indexPath;
         }
@@ -255,6 +255,7 @@ CGFloat const JTTableViewRowAnimationDuration          = 0.25;       // Rough gu
                 [self.delegate gestureRecognizer:self commitEditingState:self.addingCellState forRowAtIndexPath:indexPath];
             }
         } else {
+            
             [UIView beginAnimations:@"" context:nil];
             cell.contentView.frame = cell.contentView.bounds;
             [UIView commitAnimations];

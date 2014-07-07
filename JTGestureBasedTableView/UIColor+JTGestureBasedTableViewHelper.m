@@ -57,4 +57,11 @@
     }
     return newColor;
 }
+
++ (UIColor *)iGreenColor:(CGFloat)alpha{
+     return [UIColor colorWithRed:0.0/255. green:168.0/255. blue:48.0/255 alpha:alpha];
+}
++ (UIColor *)iBlackColor:(CGFloat)alpha{
+    return [UIColor colorWithRed:0.0/255. green:0/255. blue:0/255 alpha:alpha];
+}
 @end

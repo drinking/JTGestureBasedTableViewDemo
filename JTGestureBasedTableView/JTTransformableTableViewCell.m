@@ -80,7 +80,10 @@
         self.detailTextLabel.textColor = [UIColor whiteColor];
         self.detailTextLabel.shadowColor = self.textLabel.shadowColor;
         self.detailTextLabel.shadowOffset = self.textLabel.shadowOffset;
+    }else{
+        self.detailTextLabel.text = @"";
     }
+    
     self.textLabel.frame = CGRectMake(10.0, 0.0, contentViewSize.width - 20.0, self.finishedHeight);
     self.detailTextLabel.frame = CGRectMake(10.0, -self.finishedHeight / 2, contentViewSize.width - 20.0, self.finishedHeight);
 }
